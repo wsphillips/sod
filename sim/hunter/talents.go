@@ -55,7 +55,6 @@ func (hunter *Hunter) ApplyTalents() {
 		}))
 	}
 
-
 	hunter.AddStat(stats.MeleeHit, float64(hunter.Talents.Surefooted)*1*core.MeleeHitRatingPerHitChance)
 	hunter.AddStat(stats.SpellHit, float64(hunter.Talents.Surefooted)*1*core.SpellHitRatingPerHitChance)
 
@@ -128,7 +127,7 @@ func (hunter *Hunter) registerBestialWrathCD() {
 	}
 
 	actionID := core.ActionID{SpellID: 19574}
-	
+
 	hunter.BestialWrathPetAura = hunter.pet.RegisterAura(core.Aura{
 		Label:    "Bestial Wrath Pet",
 		ActionID: actionID,
@@ -178,8 +177,8 @@ func (hunter *Hunter) trapMastery() float64 {
 func (hunter *Hunter) applyEfficiency() {
 	hunter.OnSpellRegistered(func(spell *core.Spell) {
 		// applies to Stings, Shots, Strikes and Volley
-		if spell.Flags.Matches(SpellFlagSting | SpellFlagShot | SpellFlagStrike) || spell.SpellCode == SpellCode_HunterVolley {
-			spell.Cost.Multiplier -= 2*hunter.Talents.Efficiency
+		if spell.Flags.Matches(SpellFlagSting|SpellFlagShot|SpellFlagStrike) || spell.SpellCode == SpellCode_HunterVolley {
+			spell.Cost.Multiplier -= 2 * hunter.Talents.Efficiency
 		}
 	})
 }

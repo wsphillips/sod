@@ -64,7 +64,7 @@ func (hunter *Hunter) getAimedShotConfig(rank int, timer *core.Timer) core.Spell
 			baseDamage := hunter.AutoAttacks.Ranged().CalculateNormalizedWeaponDamage(sim, spell.RangedAttackPower(target)) +
 				hunter.AmmoDamageBonus +
 				baseDamage
-				
+
 			if has2PDragonStalkerPursuit && (target.HasActiveAuraWithTag("ImmolationTrap") || target.HasActiveAuraWithTag("ExplosiveTrap")) {
 				baseDamage *= 1.20
 			}

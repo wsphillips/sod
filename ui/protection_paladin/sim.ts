@@ -1,8 +1,9 @@
+import * as BuffDebuffInputs from '../core/components/inputs/buffs_debuffs';
 import * as OtherInputs from '../core/components/other_inputs.js';
 import { Phase } from '../core/constants/other.js';
 import { IndividualSimUI, registerSpecConfig } from '../core/individual_sim_ui.js';
 import { Player } from '../core/player.js';
-import { Class, Debuffs, Faction, IndividualBuffs, PartyBuffs, PseudoStat, Race, RaidBuffs, Spec, Stat, TristateEffect } from '../core/proto/common.js';
+import { Class, Faction, PartyBuffs, PseudoStat, Race, Spec, Stat } from '../core/proto/common.js';
 import { Stats } from '../core/proto_utils/stats.js';
 import { getSpecIcon } from '../core/proto_utils/utils.js';
 import * as ProtectionPaladinInputs from './inputs.js';
@@ -11,9 +12,28 @@ import * as Presets from './presets.js';
 const SPEC_CONFIG = registerSpecConfig(Spec.SpecProtectionPaladin, {
 	cssClass: 'protection-paladin-sim-ui',
 	cssScheme: 'paladin',
-	// List any known bugs / issues here and they'll be shown on the site.
-	knownIssues: [],
-
+    // List any known bugs / issues here and they'll be shown on the site.
+	knownIssues: [
+		`Judgement of the Crusader is currently not implemented; users can manually award themselves the relevant spellpower amount
+		for a dps gain that will be slightly inflated given JotC does not benefit from source damage modifiers.`,
+		`Be aware that not all item and weapon enchants are currently implemented in the sim, which make some notable Retribution
+		weapons like Pendulum of Doom and The Jackhammer undervalued.`,
+	],
+	warnings: [
+		(simUI: IndividualSimUI<Spec.SpecProtectionPaladin>) => {
+			return {
+				updateOn: simUI.player.changeEmitter,
+				getContent: () => {
+					if (simUI.player.getSpecOptions().primarySeal == 0) {
+						return `Your previously selected seal is no longer available because of a talent or rune change.
+							No seal will be cast with this configuration. Please select an available seal in the Settings>Player menu.`;
+					} else {
+						return '';
+					}
+				},
+			};
+		},
+	],
 	// All stats for which EP should be calculated.
 	epStats: [
 		Stat.StatStamina,
@@ -37,9 +57,9 @@ const SPEC_CONFIG = registerSpecConfig(Spec.SpecProtectionPaladin, {
 		Stat.StatShadowResistance,
 		Stat.StatFrostResistance,
 	],
-	epPseudoStats: [PseudoStat.PseudoStatMainHandDps],
+	epPseudoStats: [PseudoStat.PseudoStatMainHandDps, PseudoStat.PseudoStatMeleeSpeedMultiplier],
 	// Reference stat against which to calculate EP. I think all classes use either spell power or attack power.
-	epReferenceStat: Stat.StatSpellPower,
+	epReferenceStat: Stat.StatAttackPower,
 	// Which stats to display in the Character Stats section, at the bottom of the left-hand sidebar.
 	displayStats: [
 		Stat.StatHealth,
@@ -84,9 +104,11 @@ const SPEC_CONFIG = registerSpecConfig(Spec.SpecProtectionPaladin, {
 				[Stat.StatDodge]: 0.46,
 				[Stat.StatParry]: 0.61,
 				[Stat.StatDefense]: 0.54,
+                [Stat.StatFireResistance]: 0.5,
 			},
 			{
 				[PseudoStat.PseudoStatMainHandDps]: 3.33,
+                [PseudoStat.PseudoStatMeleeSpeedMultiplier]: 3.33,
 			},
 		),
 		// Default consumes settings.
@@ -95,40 +117,19 @@ const SPEC_CONFIG = registerSpecConfig(Spec.SpecProtectionPaladin, {
 		talents: Presets.DefaultTalents.data,
 		// Default spec-specific settings.
 		specOptions: Presets.DefaultOptions,
+        other: Presets.OtherDefaults,
 		// Default raid/party buffs settings.
-		raidBuffs: RaidBuffs.create({
-			giftOfTheWild: TristateEffect.TristateEffectImproved,
-			powerWordFortitude: TristateEffect.TristateEffectImproved,
-			strengthOfEarthTotem: TristateEffect.TristateEffectRegular,
-			arcaneBrilliance: true,
-			moonkinAura: true,
-			manaSpringTotem: TristateEffect.TristateEffectRegular,
-			thorns: TristateEffect.TristateEffectImproved,
-			devotionAura: TristateEffect.TristateEffectImproved,
-			shadowProtection: true,
-		}),
+		raidBuffs: Presets.DefaultRaidBuffs,
 		partyBuffs: PartyBuffs.create({}),
-		individualBuffs: IndividualBuffs.create({
-			blessingOfKings: true,
-			blessingOfSanctuary: true,
-			blessingOfWisdom: TristateEffect.TristateEffectImproved,
-			blessingOfMight: TristateEffect.TristateEffectImproved,
-		}),
-		debuffs: Debuffs.create({
-			judgementOfWisdom: true,
-			judgementOfLight: true,
-			faerieFire: true,
-			exposeArmor: TristateEffect.TristateEffectImproved,
-			sunderArmor: true,
-			thunderClap: TristateEffect.TristateEffectImproved,
-			insectSwarm: true,
-		}),
+		individualBuffs: Presets.DefaultIndividualBuffs,
+		debuffs: Presets.DefaultDebuffs,
+        race: Race.RaceHuman,
 	},
 
 	// IconInputs to include in the 'Player' section on the settings tab.
-	playerIconInputs: [],
+	playerIconInputs: [ProtectionPaladinInputs.PrimarySealSelection, ProtectionPaladinInputs.AuraSelection],
 	// Buff and Debuff inputs to include/exclude, overriding the EP-based defaults.
-	includeBuffDebuffInputs: [],
+	includeBuffDebuffInputs: [BuffDebuffInputs.SpellScorchDebuff],
 	excludeBuffDebuffInputs: [],
 	// Inputs to include in the 'Other' section on the settings tab.
 	otherInputs: {
@@ -140,8 +141,6 @@ const SPEC_CONFIG = registerSpecConfig(Spec.SpecProtectionPaladin, {
 			OtherInputs.BurstWindow,
 			OtherInputs.HpPercentForDefensives,
 			OtherInputs.InspirationUptime,
-			ProtectionPaladinInputs.AuraSelection,
-			// ProtectionPaladinInputs.StartingSealSelection,
 			OtherInputs.InFrontOfTarget,
 		],
 	},
@@ -151,12 +150,17 @@ const SPEC_CONFIG = registerSpecConfig(Spec.SpecProtectionPaladin, {
 	},
 
 	presets: {
+		rotations: [
+			...Presets.APLPresets[Phase.Phase4],
+		],
 		// Preset talents that the user can quickly select.
-		talents: [...Presets.TalentPresets[Phase.Phase2], ...Presets.TalentPresets[Phase.Phase1]],
-		// Preset rotations that the user can quickly select.
-		rotations: [...Presets.APLPresets[Phase.Phase2], ...Presets.APLPresets[Phase.Phase1]],
+		talents: [
+			...Presets.TalentPresets[Phase.Phase4],
+		],
 		// Preset gear configurations that the user can quickly select.
-		gear: [...Presets.GearPresets[Phase.Phase2], ...Presets.GearPresets[Phase.Phase1]],
+		gear: [
+			...Presets.GearPresets[Phase.Phase4],
+		],
 	},
 
 	autoRotation: player => {
@@ -181,11 +185,9 @@ const SPEC_CONFIG = registerSpecConfig(Spec.SpecProtectionPaladin, {
 			defaultGear: {
 				[Faction.Unknown]: {},
 				[Faction.Alliance]: {
-					1: Presets.GearPresets[Phase.Phase1][0].gear,
+					1: Presets.GearPresets[Phase.Phase4][0].gear,
 				},
-				[Faction.Horde]: {
-					1: Presets.GearPresets[Phase.Phase1][0].gear,
-				},
+				[Faction.Horde]: {},
 			},
 		},
 	],

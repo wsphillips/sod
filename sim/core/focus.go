@@ -18,7 +18,7 @@ type OnFocusGain func(sim *Simulation)
 type focusBar struct {
 	unit *Unit
 
-	focusPerTick float64
+	focusPerTick         float64
 	focusRegenMultiplier float64
 
 	currentFocus float64
@@ -33,12 +33,12 @@ type focusBar struct {
 
 func (unit *Unit) EnableFocusBar(regenMultiplier float64, onFocusGain OnFocusGain) {
 	unit.focusBar = focusBar{
-		unit:          unit,
-		focusPerTick:  BaseFocusPerTick,
+		unit:                 unit,
+		focusPerTick:         BaseFocusPerTick,
 		focusRegenMultiplier: regenMultiplier,
-		onFocusGain:   onFocusGain,
-		regenMetrics:  unit.NewEnergyMetrics(ActionID{OtherID: proto.OtherAction_OtherActionFocusRegen}),
-		refundMetrics: unit.NewEnergyMetrics(ActionID{OtherID: proto.OtherAction_OtherActionRefund}),
+		onFocusGain:          onFocusGain,
+		regenMetrics:         unit.NewEnergyMetrics(ActionID{OtherID: proto.OtherAction_OtherActionFocusRegen}),
+		refundMetrics:        unit.NewEnergyMetrics(ActionID{OtherID: proto.OtherAction_OtherActionRefund}),
 	}
 }
 
@@ -54,7 +54,7 @@ func (fb *focusBar) CurrentFocusPerTick() float64 {
 	return fb.focusPerTick
 }
 
-func (fb *focusBar) AddFocusRegenMultiplier (multiplier float64) {
+func (fb *focusBar) AddFocusRegenMultiplier(multiplier float64) {
 	fb.focusRegenMultiplier *= multiplier
 }
 

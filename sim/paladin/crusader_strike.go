@@ -51,6 +51,6 @@ func (paladin *Paladin) registerCrusaderStrike() {
 			}
 		},
 	})
-	
+
 	paladin.crusaderStrike = crusaderStrikeSpell
 }

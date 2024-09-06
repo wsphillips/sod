@@ -56,7 +56,7 @@ type Simulation struct {
 
 	minWeaponAttackTime time.Duration
 	weaponAttacks       []*WeaponAttack
-	extraAttacks int32
+	extraAttacks        int32
 
 	minTaskTime time.Duration
 	tasks       []Task

@@ -261,7 +261,6 @@ var PlayerOptionsSealofMartyrdom = &proto.Player_RetributionPaladin{
 	},
 }
 
-
 var PlayerOptionsSealofRighteousness = &proto.Player_RetributionPaladin{
 	RetributionPaladin: &proto.RetributionPaladin{
 		Options: optionsSealOfRighteousness,

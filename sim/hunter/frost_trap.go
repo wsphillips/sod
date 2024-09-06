@@ -23,7 +23,7 @@ func (hunter *Hunter) getFrostTrapConfig(timer *core.Timer) core.SpellConfig {
 		Cast: core.CastConfig{
 			CD: core.Cooldown{
 				Timer:    timer,
-				Duration: time.Second * time.Duration(15 * hunter.resourcefulnessCooldownModifier()),
+				Duration: time.Second * time.Duration(15*hunter.resourcefulnessCooldownModifier()),
 			},
 			DefaultCast: core.Cast{
 				GCD: core.GCDDefault,

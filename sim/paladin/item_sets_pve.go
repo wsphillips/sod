@@ -122,6 +122,93 @@ var ItemSetLawbringerRadiance = core.NewItemSet(core.ItemSet{
 	},
 })
 
+var ItemSetLawbringerWill = core.NewItemSet(core.ItemSet{
+	Name: "Lawbringer Will",
+	Bonuses: map[int32]core.ApplyEffect{
+		2: func(agent core.Agent) {
+			// (2) Set: Increases the block value of your shield by 30.
+			character := agent.GetCharacter()
+			character.AddStat(stats.BlockValue, 30)
+		},
+		4: func(agent core.Agent) {
+			// (4) Set: Heal for 189 to 211 when you Block. (ICD: 3.5s)
+			// Note: The heal does not scale with healing power, but can crit.
+			paladin := agent.(PaladinAgent).GetPaladin()
+			c := agent.GetCharacter()
+			actionID := core.ActionID{SpellID: 456540}
+			bastionOfLight := paladin.RegisterSpell(core.SpellConfig{
+				ActionID:         actionID,
+				SpellSchool:      core.SpellSchoolHoly,
+				DefenseType:      core.DefenseTypeMagic,
+				ProcMask:         core.ProcMaskSpellHealing,
+				DamageMultiplier: 1,
+				ThreatMultiplier: 1,
+				ApplyEffects: func(sim *core.Simulation, target *core.Unit, spell *core.Spell) {
+					baseHeal := sim.Roll(189, 211)
+					spell.CalcAndDealHealing(sim, target, baseHeal, spell.OutcomeHealingCrit)
+				},
+			})
+
+			handler := func(sim *core.Simulation, spell *core.Spell, result *core.SpellResult) {
+				bastionOfLight.Cast(sim, result.Target)
+			}
+
+			core.MakeProcTriggerAura(&c.Unit, core.ProcTrigger{
+				ActionID:   actionID,
+				Name:       "S03 - Item - T1 - Paladin - Protection 4P Bonus",
+				Callback:   core.CallbackOnSpellHitTaken,
+				Outcome:    core.OutcomeBlock,
+				ProcChance: 1.0,
+				ICD:        time.Millisecond * 3500,
+				Handler:    handler,
+			})
+		},
+		6: func(agent core.Agent) {
+
+			paladin := agent.(PaladinAgent).GetPaladin()
+
+			paladin.RegisterAura(core.Aura{
+				Label: "S03 - Item - T1 - Paladin - Protection 6P Bonus",
+				OnReset: func(aura *core.Aura, sim *core.Simulation) {
+					auras := paladin.holyShieldAura
+					procs := paladin.holyShieldProc
+					blockBonus := 30.0 * core.BlockRatingPerBlockChance
+
+					for i, values := range HolyShieldValues {
+
+						damage := values.damage
+
+						if paladin.Level < values.level {
+							break
+						}
+
+						// Holy Shield's damage is increased by shield block value.
+						procs[i].ApplyEffects = func(sim *core.Simulation, target *core.Unit, spell *core.Spell) {
+							sbv := paladin.GetStat(stats.BlockValue)
+							spell.CalcAndDealDamage(sim, target, (damage + sbv), spell.OutcomeMagicHitAndCrit)
+						}
+
+						// Holy Shield aura no longer has stacks...
+						auras[i].MaxStacks = 0
+
+						// ...and does not set stacks on gain...
+						auras[i].OnGain = func(aura *core.Aura, sim *core.Simulation) {
+							paladin.AddStatDynamic(sim, stats.Block, blockBonus)
+						}
+
+						// ...or remove stacks on block.
+						auras[i].OnSpellHitTaken = func(aura *core.Aura, sim *core.Simulation, spell *core.Spell, result *core.SpellResult) {
+							if result.Outcome.Matches(core.OutcomeBlock) {
+								procs[i].Cast(sim, spell.Unit)
+							}
+						}
+					}
+				},
+			})
+		},
+	},
+})
+
 ///////////////////////////////////////////////////////////////////////////
 //                            SoD Phase 5 Item Sets
 ///////////////////////////////////////////////////////////////////////////
@@ -184,6 +271,79 @@ var ItemSetMercifulJudgement = core.NewItemSet(core.ItemSet{
 			// While you are not your Beacon of Light target, your Beacon of Light target is also healed by 100% of the damage you deal
 			// with Consecration, Exorcism, Holy Shock, Holy Wrath, and Hammer of Wrath
 			// No need to Sim
+		},
+	},
+})
+
+var ItemSetWilfullJudgement = core.NewItemSet(core.ItemSet{
+	Name: "Wilfull Judgement",
+	Bonuses: map[int32]core.ApplyEffect{
+		2: func(agent core.Agent) {
+			//Increases the bonus chance to block from Holy Shield by 10%
+
+			paladin := agent.(PaladinAgent).GetPaladin()
+
+			paladin.RegisterAura(core.Aura{
+				Label: "T2 - Paladin - Protection 2P Bonus",
+				OnInit: func(aura *core.Aura, sim *core.Simulation) {
+					blockBonus := 40.0 * core.BlockRatingPerBlockChance
+					var numCharges int32 = 4
+					for _, aura := range paladin.holyShieldAura {
+						aura.OnGain = func(aura *core.Aura, sim *core.Simulation) {
+							aura.SetStacks(sim, numCharges)
+							paladin.AddStatDynamic(sim, stats.Block, blockBonus)
+						}
+						aura.OnExpire = func(aura *core.Aura, sim *core.Simulation) {
+							paladin.AddStatDynamic(sim, stats.Block, -blockBonus)
+						}
+					}
+
+				},
+			})
+		},
+		4: func(agent core.Agent) {
+			//You take 10% reduced damage while Holy Shield is active.
+			paladin := agent.(PaladinAgent).GetPaladin()
+			paladin.RegisterAura(core.Aura{
+				Label: "T2 - Paladin - Protection 4P Bonus",
+				OnInit: func(aura *core.Aura, sim *core.Simulation) {
+					blockBonus := 40.0 * core.BlockRatingPerBlockChance
+					var numCharges int32 = 4
+
+					for _, aura := range paladin.holyShieldAura {
+						aura.OnGain = func(aura *core.Aura, sim *core.Simulation) {
+							aura.SetStacks(sim, numCharges)
+							paladin.AddStatDynamic(sim, stats.Block, blockBonus)
+							aura.Unit.PseudoStats.DamageTakenMultiplier *= 0.9
+						}
+						aura.OnExpire = func(aura *core.Aura, sim *core.Simulation) {
+							paladin.AddStatDynamic(sim, stats.Block, -blockBonus)
+							aura.Unit.PseudoStats.DamageTakenMultiplier /= 0.9
+						}
+					}
+				},
+			})
+		},
+		6: func(agent core.Agent) {
+			// Your Reckoning Talent now has a 20% chance per talent point to trigger when
+			// you block.
+			c := agent.GetCharacter()
+			actionID := core.ActionID{SpellID: 20178}
+			paladin := agent.(PaladinAgent).GetPaladin()
+			procChance := 0.2 * float64(paladin.Talents.Reckoning)
+
+			handler := func(sim *core.Simulation, spell *core.Spell, result *core.SpellResult) {
+				paladin.AutoAttacks.ExtraMHAttack(sim, 1, actionID, spell.ActionID)
+			}
+
+			core.MakeProcTriggerAura(&c.Unit, core.ProcTrigger{
+				ActionID:   actionID,
+				Name:       "Item - T2 - Paladin - Protection 4P Bonus",
+				Callback:   core.CallbackOnSpellHitTaken,
+				Outcome:    core.OutcomeBlock,
+				ProcChance: procChance,
+				Handler:    handler,
+			})
 		},
 	},
 })

@@ -59,6 +59,6 @@ func (paladin *Paladin) registerDivineStorm() {
 			paladin.GainHealth(sim, totalDamageDealt*0.25, healthMetrics)
 		},
 	})
-	
+
 	paladin.divineStorm = divineStormSpell
 }

@@ -35,12 +35,12 @@ func (paladin *Paladin) registerHammerOfWrath() {
 		}
 
 		paladin.GetOrRegisterSpell(core.SpellConfig{
-			ActionID:        core.ActionID{SpellID: rank.spellID},
-			SpellSchool:     core.SpellSchoolHoly,
-			DefenseType:     core.DefenseTypeRanged,
-			ProcMask:        core.ProcMaskRangedSpecial, // TODO to be tested
-			Flags:           core.SpellFlagMeleeMetrics | core.SpellFlagAPL,
-			CastType:        proto.CastType_CastTypeRanged,
+			ActionID:    core.ActionID{SpellID: rank.spellID},
+			SpellSchool: core.SpellSchoolHoly,
+			DefenseType: core.DefenseTypeRanged,
+			ProcMask:    core.ProcMaskRangedSpecial, // TODO to be tested
+			Flags:       core.SpellFlagMeleeMetrics | core.SpellFlagAPL,
+			CastType:    proto.CastType_CastTypeRanged,
 
 			Rank:          i + 1,
 			RequiredLevel: int(rank.level),

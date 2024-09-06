@@ -22,6 +22,7 @@ const (
 	SpellCode_PaladinHolyShock
 	SpellCode_PaladinHolyWrath
 	SpellCode_PaladinJudgementOfCommand
+	SpellCode_PaladinHolyShield
 	SpellCode_PaladinConsecration
 )
 
@@ -68,6 +69,10 @@ type Paladin struct {
 	exorcism          []*core.Spell
 	judgement         *core.Spell
 	rv                *core.Spell
+	reckoning         *core.Aura
+	redoubtAura       *core.Aura
+	holyShieldAura    [3]*core.Aura
+	holyShieldProc    [3]*core.Spell
 
 	// highest rank seal spell if available
 	sealOfRighteousness *core.Spell
@@ -134,6 +139,8 @@ func (paladin *Paladin) Initialize() {
 	paladin.registerHolyWrath()
 	paladin.registerAvengingWrath()
 	paladin.registerAuraMastery()
+	paladin.registerShieldOfRighteousness()
+	paladin.registerHolyShield()
 
 	paladin.lingerDuration = time.Millisecond * 400
 	paladin.consumeSealsOnJudge = true
@@ -166,12 +173,16 @@ func NewPaladin(character *core.Character, options *proto.Player, paladinOptions
 	paladin.AddStatDependency(stats.Agility, stats.MeleeCrit, core.CritPerAgiAtLevel[character.Class][int(paladin.Level)]*core.CritRatingPerCritChance)
 	paladin.AddStatDependency(stats.Agility, stats.Dodge, core.CritPerAgiAtLevel[character.Class][int(paladin.Level)]*core.CritRatingPerCritChance)
 	paladin.AddStatDependency(stats.Intellect, stats.SpellCrit, core.CritPerIntAtLevel[character.Class][int(paladin.Level)]*core.SpellCritRatingPerCritChance)
-
-	// Paladins get 1 block value per 20 str
-	paladin.AddStatDependency(stats.Strength, stats.BlockValue, .05)
+	paladin.AddStatDependency(stats.Agility, stats.Dodge, core.DodgePerAgiAtLevel[character.Class][int(paladin.Level)])
+	paladin.AddStatDependency(stats.Strength, stats.BlockValue, .05) // 20 str = 1 block value
 
 	// Bonus Armor and Armor are treated identically for Paladins
 	paladin.AddStatDependency(stats.BonusArmor, stats.Armor, 1)
+
+	// The below requires some verification for the prot paladin sim when it is implemented.
+	// Switch these to AddStat as the PsuedoStats are being removed
+	// paladin.PseudoStats.BaseDodge += 0.034943
+	// paladin.PseudoStats.BaseParry += 0.05
 
 	guardians.ConstructGuardians(&paladin.Character)
 
@@ -252,4 +263,11 @@ func (paladin *Paladin) getLibramSealCostReduction() float64 {
 		return 20
 	}
 	return 0
+}
+
+func (paladin *Paladin) sbvEquipBonus(multiplier float64) float64 {
+	equipStats := paladin.Equipment.BaseStats()
+	oldValue := equipStats[stats.BlockValue]
+	newValue := oldValue * multiplier
+	return newValue - oldValue
 }
